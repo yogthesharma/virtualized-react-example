@@ -10,10 +10,6 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,12 +21,18 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "18"
+          cache: "npm"
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci || npm install
 
       - name: Build
         run: npm run build
+
+      - name: Debug Build Output
+        run: |
+          echo "Contents of dist directory:"
+          ls -la dist/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -38,14 +40,14 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./dist" # This specifies that your built files are in the dist folder
+          path: "./dist"
 
   deploy:
+    needs: build
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
